@@ -1,0 +1,55 @@
+---
+- name: "stop etcd on host {{inventory_hostname}}"
+  block:
+    - systemd:
+        name: kinetica-etcd
+        state: stopped
+  rescue:
+    - name: manual stop
+      shell: /opt/gpudb/etcd/gpudb-etcd.sh stop
+      become: yes
+      # become_user: gpudb
+  when: inventory_hostname == groups['etcd_new'][item|int]
+
+- name: "Clear WAL and DATA"
+  shell: rm -rf /opt/gpudb/etcd/storage/data/* && rm -rf /opt/gpudb/etcd/storage/wal/*
+  args:
+    warn: false
+  become: yes
+  when: inventory_hostname == groups['etcd_new'][item|int]
+
+- name: "run add on {{inventory_hostname}}"
+  shell: "/opt/gpudb/etcd/etcdctl --command-timeout={{ cmd_timeout }} --dial-timeout={{ dial_timeout }} --endpoints=https://{{ private_ip }}:{{ etcd_client_port }} --user root:{{ root_etcd_pass }} member add {{ hostvars[groups['etcd_new'][item|int]]['ansible_hostname'] }}  --peer-urls=https://{{ hostvars[groups['etcd_new'][item|int]]['private_ip'] }}:{{ etcd_peer_port }}"
+  when: inventory_hostname == groups['etcd_installed'][0]
+
+- name: add current host
+  add_host:
+    hostname: "{{ groups['etcd_new'][item|int] }}"
+    groupname: "etcd_installed"
+    private_ip: "{{ hostvars[groups['etcd_new'][item|int]]['private_ip'] }}"
+
+- name: output template
+  template:
+    src: etcd.conf.yml.j2
+    dest: /opt/gpudb/etcd/etcd.conf.yml
+    force: yes
+    owner: gpudb
+    group: gpudb
+  register: etcd_template
+  when: inventory_hostname == groups['etcd_new'][item|int] or inventory_hostname in groups['etcd_installed']
+
+- name: "start etcd on host {{inventory_hostname}}"
+  block:
+    - systemd:
+        name: kinetica-etcd
+        state: started
+  rescue:
+    - name: manual restart
+      shell: /opt/gpudb/etcd/gpudb-etcd.sh stop; sleep 5; /opt/gpudb/etcd/gpudb-etcd.sh start
+      become: yes
+      # become_user: gpudb
+  when: inventory_hostname == groups['etcd_new'][item|int]
+
+- name: sleep for 10 seconds
+  wait_for:
+    timeout: 10

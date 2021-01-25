@@ -1,0 +1,52 @@
+---
+version: "3.7"
+networks:
+    kinetica-network:
+        ipam:
+            config:
+                - subnet: 10.0.0.0/16
+services:
+    kagent:
+        build:
+            context: ../
+            dockerfile: docker/kagent.dockerfile
+        image: dd-kagent:latest
+        ports:
+            - 8081:8081
+        networks:
+            kinetica-network:
+                ipv4_address: 10.0.0.100
+        privileged: true
+        container_name: dd-kagent
+
+    r1c1n1:
+        privileged: true
+        image: dd-kinetica
+        build:
+            context: ../
+            dockerfile: docker/kinetica.dockerfile
+        # Need to open up some ports
+        ports:
+            - 8080
+            - 8088
+            - 9191
+        networks:
+            kinetica-network:
+                ipv4_address: 10.0.0.10
+        container_name: r1c1n1
+
+    r1c1n2:
+        privileged: true
+        image: dd-kinetica
+        depends_on:
+            - r1c1n1
+        # Need to open up some ports
+        ports:
+            - 8080
+            - 8088
+            - 9191
+        networks:
+            kinetica-network:
+                ipv4_address: 10.0.0.11
+        container_name: r1c1n2
+

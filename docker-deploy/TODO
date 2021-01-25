@@ -1,0 +1,14 @@
+TODO: (In order of priority)
+
+- Add flag to auto-override generated files when using build.sh
+- Write-up README (note the ignored files ESPECIALLY config/config.yml) --> include instructions on key generator
+- Taking everything down easily --> make init.sh an interactive program? new management program for manage cluster status, bringing everything down, deploying existing images
+  new script would have sub-commands that have their own unique options
+- Ability to restart specific cluster without re-installing --> what needs to be done manually vs. what can be done via a wrapper script that just interacts with kagent cluster/ring controls
+- Determine if there's a way to install unlimited RPMs using KAgent (offline maybe?)
+- Try not to tie script names to Docker terminology
+
+- Auto-config utility to edit gpudb.conf for HTTPD, SSL, multiple graph servers, enable procs, authE/authO
+- Correct issues with multiple flags on init.sh
+- Running build.sh then up.sh results in config_validation function asking to clear out mount base directory because it creates the "r2c1" directory each time -- fix this?
+- Check version of Bash and error if 4.1 or previous (array subscript of -1 is not supported in Bash v4.1 or earlier)

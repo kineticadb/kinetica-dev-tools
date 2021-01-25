@@ -1,0 +1,68 @@
+docker:
+    # All the key-value pairs are required here
+    project-name: "docker-deploy"
+    compose-config: "docker/docker-compose.yml" # relative to build.sh script
+    kagent-image-name: "dd-kagent"
+    kinetica-image-name: "dd-kinetica"
+    kagent-dockerfile: "docker/kagent.dockerfile" # relative to build.sh script
+    kinetica-dockerfile: "docker/kinetica.dockerfile" # relative to build.sh script
+    mount-base-directory: "mount/" # relative to build.sh script
+    network-name: "kinetica-network"
+    subnet: "10.0.0.0/16"
+kagent:
+    # All the key-value pairs are required here
+    ip-address: "10.0.0.100"
+provision:
+    # All the keys are required here.  For optional parameters,
+    # leave the value as an empty string if it is not needed.
+    kinetica-version: 7.1
+    license-key: "<REQUIRED>"
+    admin-password: "<REQUIRED>"
+    # valid deployments: aws, azure, gcp, onprem
+    deploy: "onprem"
+    cloud-parameters:
+        local-ssh-key-directory: "~/"
+        kagent-ssh-keys-directory: "/opt/gpudb/kagent/ui/temp/"
+        sudo-password: "<OPTIONAL>"
+    on-prem:
+        sshd-setup-script: "utils/container/docker-sshd-setup.sh" # relative to build.sh script
+        ssh-user: "root"
+        ssh-password: "<REQUIRED>"
+rings:
+    # The rings are in a bulleted list; each entry is an object with the
+    # following required keys: ring-name, enable-ha, clusters
+    - ring-name: "r1"
+      enable-ha: false
+      clusters:
+          # The clusters are in a bulleted list; each entry is an object with
+          # the following required keys: cluster-name, nodes, enable-np1
+          - cluster-name: "r1c1"
+            enable-np1: false
+            nodes:
+                # The nodes are in a bulleted list; each entry is an object with
+                # the following required keys: hostname, roles, ip-address
+                - hostname: "r1c1n1"
+                  # valid roles: head, etcd, graph, kml, ha_queue, kagent, worker, spare
+                  roles: "head,graph,etcd"
+                  ip-address: "10.0.0.10"
+                - hostname: "r1c1n2"
+                  roles: "worker"
+                  ip-address: "10.0.0.11"
+    - ring-name: "r2"
+      enable-ha: true
+      clusters:
+          - cluster-name: "r2c1"
+            enable-np1: true
+            nodes:
+                - hostname: "r2c1n1"
+                  roles: "head,graph,etcd,ha_queue"
+                  ip-address: "10.0.0.20"
+                - hostname: "r2c1n2"
+                  roles: "worker"
+                  ip-address: "10.0.0.21"
+          - cluster-name: "r2c2"
+            enable-np1: false
+            nodes:
+                - hostname: "r2c2n1"
+                  roles: "head,graph,etcd,ha_queue"
+                  ip-address: "10.0.0.22"
